@@ -14,8 +14,3 @@ Voraussetzung: [uv](https://docs.astral.sh/uv/)
 ```bash
 uv sync
 ```
-
-## Status
-
-🚧 Im Aufbau — aktueller Stand: Datenmodell für Spielfeld, Spielfigur, Gegner
-und Gegenstände (Meilenstein 1 von 12).
