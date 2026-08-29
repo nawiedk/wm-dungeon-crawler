@@ -1,0 +1,28 @@
+[project]
+name = "wm-dungeon-crawler"
+version = "0.1.0"
+description = "Rundenbasiertes Fluchtspiel: eine Spielfigur muss aus einem Fußballstadion entkommen."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pygame-ce",
+    "pydantic",
+]
+
+[dependency-groups]
+dev = [
+    "coverage",
+    "hypothesis",
+    "interrogate",
+    "mypy",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["wm_dungeon_crawler"]
