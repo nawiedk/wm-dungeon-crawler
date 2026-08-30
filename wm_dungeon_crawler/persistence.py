@@ -45,10 +45,12 @@ class PositionData(BaseModel):
     y: int
 
     def to_position(self) -> Position:
+        """Wandelt zurück in die Live-Dataclass `Position`."""
         return Position(self.x, self.y)
 
     @classmethod
     def from_position(cls, position: Position) -> PositionData:
+        """Baut ein PositionData aus einer Live-`Position`."""
         return cls(x=position.x, y=position.y)
 
 
@@ -68,19 +70,25 @@ class GridData(BaseModel):
     tiles: list[TileData]
 
     def to_grid(self) -> Grid:
+        """Wandelt zurück in die Live-Dataclass `Grid`."""
         return Grid(
             width=self.width,
             height=self.height,
-            tiles={entry.position.to_position(): entry.tile_type for entry in self.tiles},
+            tiles={
+                entry.position.to_position(): entry.tile_type for entry in self.tiles
+            },
         )
 
     @classmethod
     def from_grid(cls, grid: Grid) -> GridData:
+        """Baut ein GridData aus einem Live-`Grid`."""
         return cls(
             width=grid.width,
             height=grid.height,
             tiles=[
-                TileData(position=PositionData.from_position(position), tile_type=tile_type)
+                TileData(
+                    position=PositionData.from_position(position), tile_type=tile_type
+                )
                 for position, tile_type in grid.tiles.items()
             ],
         )
@@ -93,11 +101,15 @@ class DoorData(BaseModel):
     locked: bool
 
     def to_door(self) -> Door:
+        """Wandelt zurück in die Live-Dataclass `Door`."""
         return Door(position=self.position.to_position(), locked=self.locked)
 
     @classmethod
     def from_door(cls, door: Door) -> DoorData:
-        return cls(position=PositionData.from_position(door.position), locked=door.locked)
+        """Baut ein DoorData aus einer Live-`Door`."""
+        return cls(
+            position=PositionData.from_position(door.position), locked=door.locked
+        )
 
 
 class ItemData(BaseModel):
@@ -107,10 +119,12 @@ class ItemData(BaseModel):
     name: str = Field(min_length=1)
 
     def to_item(self) -> Item:
+        """Wandelt zurück in die Live-Dataclass `Item`."""
         return Item(position=self.position.to_position(), name=self.name)
 
     @classmethod
     def from_item(cls, item: Item) -> ItemData:
+        """Baut ein ItemData aus einem Live-`Item`."""
         return cls(position=PositionData.from_position(item.position), name=item.name)
 
 
@@ -122,6 +136,7 @@ class PlayerData(BaseModel):
     inventory: list[ItemData]
 
     def to_player(self) -> Player:
+        """Wandelt zurück in die Live-Dataclass `Player`."""
         return Player(
             position=self.position.to_position(),
             stamina=self.stamina,
@@ -130,6 +145,7 @@ class PlayerData(BaseModel):
 
     @classmethod
     def from_player(cls, player: Player) -> PlayerData:
+        """Baut ein PlayerData aus einem Live-`Player`."""
         return cls(
             position=PositionData.from_position(player.position),
             stamina=player.stamina,
@@ -144,6 +160,7 @@ class GuardData(BaseModel):
     patrol_index: int = Field(ge=0)
 
     def to_guard(self) -> Guard:
+        """Wandelt zurück in die Live-Dataclass `Guard`."""
         return Guard(
             patrol_route=[entry.to_position() for entry in self.patrol_route],
             patrol_index=self.patrol_index,
@@ -151,6 +168,7 @@ class GuardData(BaseModel):
 
     @classmethod
     def from_guard(cls, guard: Guard) -> GuardData:
+        """Baut ein GuardData aus einer Live-`Guard`."""
         return cls(
             patrol_route=[PositionData.from_position(p) for p in guard.patrol_route],
             patrol_index=guard.patrol_index,
@@ -169,6 +187,7 @@ class GameStateData(BaseModel):
     status: GameStatus
 
     def to_game_state(self) -> GameState:
+        """Wandelt zurück in den Live-`GameState`."""
         return GameState(
             grid=self.grid.to_grid(),
             player=self.player.to_player(),
@@ -180,6 +199,7 @@ class GameStateData(BaseModel):
 
     @classmethod
     def from_game_state(cls, state: GameState) -> GameStateData:
+        """Baut ein GameStateData aus einem Live-`GameState`."""
         return cls(
             grid=GridData.from_grid(state.grid),
             player=PlayerData.from_player(state.player),

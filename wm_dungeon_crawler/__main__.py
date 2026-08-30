@@ -26,6 +26,7 @@ _SPRINT_KEYS: dict[str, Direction] = {
 
 
 def _render_state(engine: Engine) -> None:
+    """Gibt Raster, Ausdauer und Inventar des aktuellen Zustands aus."""
     print(render_ascii(engine.state))
     print(f"Ausdauer: {engine.state.player.stamina}/{MAX_STAMINA}")
     items = ", ".join(item.name for item in engine.state.player.inventory) or "leer"
@@ -77,7 +78,9 @@ def main() -> None:
                     )
                     continue
                 if not engine.take_turn_move(direction, sprint=sprint):
-                    print("Das geht nicht - zu wenig Ausdauer oder der Weg ist versperrt.")
+                    print(
+                        "Das geht nicht - zu wenig Ausdauer oder der Weg ist versperrt."
+                    )
             _render_state(engine)
 
         if engine.state.status is GameStatus.LOST:

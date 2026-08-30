@@ -38,6 +38,7 @@ class Position:
     y: int
 
     def __add__(self, direction: Direction) -> Position:
+        """Addiert eine Bewegungsrichtung auf diese Position."""
         dx, dy = direction.value
         return Position(self.x + dx, self.y + dy)
 
@@ -76,6 +77,7 @@ class Grid:
     tiles: dict[Position, TileType] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        """Prüft Rastermaße und dass höchstens ein Ausgang existiert."""
         assert self.width > 0 and self.height > 0, "Rastermaße müssen positiv sein"
         exits = [p for p, t in self.tiles.items() if t is TileType.EXIT]
         assert len(exits) <= 1, "Ein Level darf höchstens einen Ausgang haben"
@@ -142,6 +144,7 @@ class Player:
     inventory: list[Item] = field(default_factory=list)
 
     def __post_init__(self) -> None:
+        """Prüft, dass die Ausdauer im gültigen Bereich liegt."""
         assert 0 <= self.stamina <= MAX_STAMINA, (
             f"Ausdauer muss zwischen 0 und {MAX_STAMINA} liegen"
         )
@@ -163,6 +166,7 @@ class Guard:
     patrol_index: int = 0
 
     def __post_init__(self) -> None:
+        """Prüft, dass der Patrouillenweg nicht leer und der Index gültig ist."""
         assert len(self.patrol_route) > 0, "Patrouillenweg darf nicht leer sein"
         assert 0 <= self.patrol_index < len(self.patrol_route), (
             "patrol_index außerhalb des Patrouillenwegs"

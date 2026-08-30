@@ -21,7 +21,10 @@ def test_round_trip_preserves_player_and_level_shape(tmp_path):
 
     assert loaded.player.position == state.player.position
     assert loaded.player.stamina == 1
-    assert (loaded.grid.width, loaded.grid.height) == (state.grid.width, state.grid.height)
+    assert (loaded.grid.width, loaded.grid.height) == (
+        state.grid.width,
+        state.grid.height,
+    )
     assert len(loaded.guards) == len(state.guards)
     assert len(loaded.doors) == len(state.doors)
     assert len(loaded.items) == len(state.items)

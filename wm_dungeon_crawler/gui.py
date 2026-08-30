@@ -158,7 +158,9 @@ def _draw_end_overlay(
     surface.blit(overlay, (MARGIN, MARGIN))
 
     rendered = font_large.render(text, True, color)
-    rect = rendered.get_rect(center=(MARGIN + grid_width_px // 2, MARGIN + grid_height_px // 2))
+    rect = rendered.get_rect(
+        center=(MARGIN + grid_width_px // 2, MARGIN + grid_height_px // 2)
+    )
     surface.blit(rendered, rect)
 
 
@@ -179,7 +181,9 @@ def _handle_keydown(engine: Engine, event: pygame.event.Event) -> str | None:
     if event.key == pygame.K_u:
         if engine.try_unlock_adjacent_door():
             return ""
-        return "Das geht nicht - keine angrenzende Tür oder kein Gegenstand im Inventar."
+        return (
+            "Das geht nicht - keine angrenzende Tür oder kein Gegenstand im Inventar."
+        )
 
     direction = _DIRECTION_KEYS.get(event.key)
     if direction is None:

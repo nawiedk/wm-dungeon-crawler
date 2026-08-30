@@ -49,7 +49,9 @@ def test_sprint_collects_item_on_intermediate_tile():
     assert engine.take_turn_move(Direction.RIGHT, sprint=True) is True
     assert engine.state.player.position == Position(2, 0)
     assert engine.state.items == []
-    assert [collected.name for collected in engine.state.player.inventory] == ["Schlüssel"]
+    assert [collected.name for collected in engine.state.player.inventory] == [
+        "Schlüssel"
+    ]
 
 
 def test_sprint_blocked_on_second_tile_has_no_side_effects():
@@ -163,7 +165,9 @@ def test_no_action_possible_after_losing():
 
 @given(
     st.lists(
-        st.sampled_from([Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]),
+        st.sampled_from(
+            [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]
+        ),
         min_size=1,
         max_size=20,
     )

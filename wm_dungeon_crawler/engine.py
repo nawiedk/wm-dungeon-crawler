@@ -21,6 +21,7 @@ class Engine:
     einen GameState an."""
 
     def __init__(self, state: GameState) -> None:
+        """Merkt sich den zu steuernden Spielzustand."""
         self.state = state
 
     def is_passable(self, position: Position) -> bool:
@@ -252,7 +253,6 @@ class Engine:
         True
         """
         if any(
-            guard.position == self.state.player.position
-            for guard in self.state.guards
+            guard.position == self.state.player.position for guard in self.state.guards
         ):
             self.state.status = GameStatus.LOST
