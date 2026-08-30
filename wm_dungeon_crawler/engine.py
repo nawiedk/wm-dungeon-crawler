@@ -1,18 +1,25 @@
-"""Spiellogik: Bewegung, Kollisionsprüfung, Ausdauer, Türen und Gegenstände.
+"""Spiellogik: Bewegung, Kollision, Ausdauer, Türen/Gegenstände, Gegner und
+die Niederlagebedingung.
 
 Reine Datenhaltung bleibt in `models.py`; hier kommt das Verhalten dazu, das
-auf einem `GameState` operiert. Echte Gegnerbewegung und Sieg-/
-Niederlage-Bedingungen folgen in späteren Meilensteinen.
+auf einem `GameState` operiert. Die Siegbedingung (Ausgang erreichen) folgt
+in einem späteren Meilenstein.
 """
 
 from __future__ import annotations
 
-from wm_dungeon_crawler.models import MAX_STAMINA, Direction, GameState, Position
+from wm_dungeon_crawler.models import (
+    MAX_STAMINA,
+    Direction,
+    GameState,
+    GameStatus,
+    Position,
+)
 
 
 class Engine:
-    """Wendet Spielregeln (Bewegung, Kollision, Ausdauer, Türen) auf einen
-    GameState an."""
+    """Wendet Spielregeln (Bewegung, Kollision, Ausdauer, Türen, Gegner) auf
+    einen GameState an."""
 
     def __init__(self, state: GameState) -> None:
         self.state = state
@@ -23,7 +30,7 @@ class Engine:
         Betretbar ist eine Position, wenn sie im Raster liegt, keine Wand
         ist und keine verschlossene Tür dort steht. Ob dort gerade eine
         Sicherheitskraft steht, spielt für die Bewegung keine Rolle – das
-        führt stattdessen zur Niederlagebedingung (späterer Meilenstein).
+        führt stattdessen zur Niederlagebedingung.
 
         >>> from wm_dungeon_crawler.levels import create_fixed_level
         >>> engine = Engine(create_fixed_level())
@@ -46,15 +53,16 @@ class Engine:
         Ohne Sprint: ein Schritt für 1 Ausdauer. Mit Sprint: zwei Schritte in
         dieselbe Richtung für 2 Ausdauer (nur bei voller Ausdauerleiste
         möglich, die maximal 2 fasst). Ist die Bewegung nicht möglich (Wand,
-        verschlossene Tür, Rastergrenze oder zu wenig Ausdauer), passiert gar
-        nichts und es wird keine Runde verbraucht – wie ein ungültiger
-        Tastendruck. Liegt auf einem durchquerten Feld ein Gegenstand, wird
-        er automatisch eingesammelt.
+        verschlossene Tür, Rastergrenze, zu wenig Ausdauer oder die Partie
+        ist bereits entschieden), passiert gar nichts und es wird keine
+        Runde verbraucht.
 
         Reihenfolge einer erfolgreichen Runde: Ausdauer wird abgezogen, die
         Spielfigur bewegt sich, Gegenstände auf dem Weg werden eingesammelt,
-        alle Sicherheitskräfte ziehen (noch ohne Wirkung, siehe
-        `_advance_guards`), danach regeneriert sich 1 Ausdauer.
+        landet die Spielfigur dabei auf einer Sicherheitskraft ist die
+        Partie sofort verloren; andernfalls ziehen alle Sicherheitskräfte,
+        was ebenfalls zur Niederlage führen kann; nur wenn die Partie danach
+        noch läuft, regeneriert sich 1 Ausdauer.
 
         >>> from wm_dungeon_crawler.levels import create_fixed_level
         >>> engine = Engine(create_fixed_level())
@@ -71,6 +79,9 @@ class Engine:
         >>> engine.state.player.position  # unverändert, Fehlversuch kostet nichts
         Position(x=2, y=4)
         """
+        if self.state.status is not GameStatus.PLAYING:
+            return False
+
         steps = 2 if sprint else 1
         cost = steps
         if self.state.player.stamina < cost:
@@ -88,15 +99,21 @@ class Engine:
         self.state.player.position = position
         for step_position in path:
             self._collect_item_at(step_position)
-        self._advance_guards()
-        self.state.player.stamina = min(self.state.player.stamina + 1, MAX_STAMINA)
+        self._check_caught()
+        if self.state.status is GameStatus.PLAYING:
+            self._advance_guards()
+            self._check_caught()
+        if self.state.status is GameStatus.PLAYING:
+            self.state.player.stamina = min(self.state.player.stamina + 1, MAX_STAMINA)
         return True
 
     def take_turn_rest(self) -> None:
         """Lässt die Spielfigur eine Runde ausruhen.
 
-        Keine Bewegung, keine Ausdauerkosten; nach dem Zug der
-        Sicherheitskräfte wird die Ausdauerleiste vollständig aufgefüllt.
+        Keine Bewegung, keine Ausdauerkosten. Danach ziehen alle
+        Sicherheitskräfte, was zur Niederlage führen kann; nur wenn die
+        Partie danach noch läuft, wird die Ausdauerleiste vollständig
+        aufgefüllt. Ist die Partie bereits entschieden, passiert nichts.
 
         >>> from wm_dungeon_crawler.levels import create_fixed_level
         >>> engine = Engine(create_fixed_level())
@@ -108,18 +125,23 @@ class Engine:
         >>> engine.state.player.stamina
         2
         """
+        if self.state.status is not GameStatus.PLAYING:
+            return
         self._advance_guards()
-        self.state.player.stamina = MAX_STAMINA
+        self._check_caught()
+        if self.state.status is GameStatus.PLAYING:
+            self.state.player.stamina = MAX_STAMINA
 
     def try_unlock_adjacent_door(self) -> bool:
         """Schließt eine an die Spielfigur angrenzende verschlossene Tür auf.
 
         Verbraucht dabei genau einen Gegenstand aus dem Inventar (kein
         Generalschlüssel: jeder Gegenstand öffnet eine Tür und ist danach
-        weg) und lässt anschließend die Sicherheitskräfte ziehen, kostet
-        aber keine Ausdauer. Ist die Aktion nicht möglich (keine
-        angrenzende verschlossene Tür, oder kein Gegenstand im Inventar),
-        passiert nichts.
+        weg) und lässt anschließend die Sicherheitskräfte ziehen (was zur
+        Niederlage führen kann), kostet aber keine Ausdauer. Ist die Aktion
+        nicht möglich (keine angrenzende verschlossene Tür, kein Gegenstand
+        im Inventar, oder die Partie ist bereits entschieden), passiert
+        nichts.
 
         >>> from wm_dungeon_crawler.models import Door, GameState, Grid, Item, Player, Position
         >>> grid = Grid(width=3, height=1)
@@ -136,6 +158,8 @@ class Engine:
         >>> player.inventory
         []
         """
+        if self.state.status is not GameStatus.PLAYING:
+            return False
         if not self.state.player.inventory:
             return False
 
@@ -147,6 +171,7 @@ class Engine:
                 door.locked = False
                 self.state.player.inventory.pop()
                 self._advance_guards()
+                self._check_caught()
                 return True
         return False
 
@@ -172,6 +197,44 @@ class Engine:
     def _advance_guards(self) -> None:
         """Lässt jede Sicherheitskraft ihren nächsten Patrouillenschritt tun.
 
-        Noch ohne Wirkung – die eigentliche Bewegung folgt in Meilenstein 6
-        (Gegnerbewegung und Niederlagebedingung).
+        >>> from wm_dungeon_crawler.models import GameState, Grid, Guard, Player, Position
+        >>> guard = Guard(patrol_route=[Position(0, 0), Position(1, 0), Position(2, 0)])
+        >>> engine = Engine(GameState(
+        ...     grid=Grid(width=3, height=1),
+        ...     player=Player(position=Position(0, 0)),
+        ...     guards=[guard],
+        ... ))
+        >>> engine._advance_guards()
+        >>> guard.position
+        Position(x=1, y=0)
+        >>> engine._advance_guards()
+        >>> guard.position
+        Position(x=2, y=0)
+        >>> engine._advance_guards()  # Patrouillenweg beginnt zyklisch von vorn
+        >>> guard.position
+        Position(x=0, y=0)
         """
+        for guard in self.state.guards:
+            guard.patrol_index = (guard.patrol_index + 1) % len(guard.patrol_route)
+
+    def _check_caught(self) -> None:
+        """Setzt den Spielstatus auf LOST, wenn eine Sicherheitskraft und
+        die Spielfigur auf demselben Feld stehen.
+
+        >>> from wm_dungeon_crawler.models import GameState, GameStatus, Grid, Guard, Player, Position
+        >>> engine = Engine(GameState(
+        ...     grid=Grid(width=2, height=1),
+        ...     player=Player(position=Position(0, 0)),
+        ...     guards=[Guard(patrol_route=[Position(0, 0)])],
+        ... ))
+        >>> engine.state.status is GameStatus.PLAYING
+        True
+        >>> engine._check_caught()
+        >>> engine.state.status is GameStatus.LOST
+        True
+        """
+        if any(
+            guard.position == self.state.player.position
+            for guard in self.state.guards
+        ):
+            self.state.status = GameStatus.LOST

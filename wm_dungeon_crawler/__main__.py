@@ -1,13 +1,13 @@
 """Startpunkt: ``uv run python -m wm_dungeon_crawler``.
 
 Provisorische Text-Steuerung zum manuellen Testen von Bewegung, Kollision,
-Ausdauer sowie Türen/Gegenständen – Platzhalter für die pygame-Oberfläche
-aus Meilenstein 10.
+Ausdauer, Türen/Gegenständen sowie Gegnern – Platzhalter für die
+pygame-Oberfläche aus Meilenstein 10.
 """
 
 from wm_dungeon_crawler.engine import Engine
 from wm_dungeon_crawler.levels import create_fixed_level
-from wm_dungeon_crawler.models import MAX_STAMINA, Direction
+from wm_dungeon_crawler.models import MAX_STAMINA, Direction, GameStatus
 from wm_dungeon_crawler.rendering import render_ascii
 
 _WALK_KEYS: dict[str, Direction] = {
@@ -41,34 +41,34 @@ def main() -> None:
     )
 
     try:
-        while True:
+        while engine.state.status is GameStatus.PLAYING:
             command = input("> ").strip()
             if command == "q":
                 print("Bis zum nächsten Mal!")
-                break
+                return
             if command == "r":
                 engine.take_turn_rest()
-                _render_state(engine)
-                continue
-            if command == "u":
+            elif command == "u":
                 if not engine.try_unlock_adjacent_door():
                     print(
                         "Das geht nicht - keine angrenzende Tür oder "
                         "kein Gegenstand im Inventar."
                     )
-                _render_state(engine)
-                continue
-            direction = _WALK_KEYS.get(command)
-            sprint = False
-            if direction is None:
-                direction = _SPRINT_KEYS.get(command)
-                sprint = True
-            if direction is None:
-                print("Unbekannte Eingabe. Nutze w/a/s/d, W/A/S/D, r, u oder q.")
-                continue
-            if not engine.take_turn_move(direction, sprint=sprint):
-                print("Das geht nicht - zu wenig Ausdauer oder der Weg ist versperrt.")
+            else:
+                direction = _WALK_KEYS.get(command)
+                sprint = False
+                if direction is None:
+                    direction = _SPRINT_KEYS.get(command)
+                    sprint = True
+                if direction is None:
+                    print("Unbekannte Eingabe. Nutze w/a/s/d, W/A/S/D, r, u oder q.")
+                    continue
+                if not engine.take_turn_move(direction, sprint=sprint):
+                    print("Das geht nicht - zu wenig Ausdauer oder der Weg ist versperrt.")
             _render_state(engine)
+
+        if engine.state.status is GameStatus.LOST:
+            print("Erwischt! Die Sicherheitskraft hat dich geschnappt. Game Over.")
     except KeyboardInterrupt:
         print("\nAbbruch. Bis zum nächsten Mal!")
 

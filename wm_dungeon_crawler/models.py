@@ -174,6 +174,14 @@ class Guard:
         return self.patrol_route[self.patrol_index]
 
 
+class GameStatus(Enum):
+    """Der Ausgang einer Partie."""
+
+    PLAYING = auto()
+    WON = auto()
+    LOST = auto()
+
+
 @dataclass
 class GameState:
     """Der vollständige Zustand einer laufenden Partie."""
@@ -183,3 +191,4 @@ class GameState:
     guards: list[Guard] = field(default_factory=list)
     items: list[Item] = field(default_factory=list)
     doors: list[Door] = field(default_factory=list)
+    status: GameStatus = GameStatus.PLAYING
