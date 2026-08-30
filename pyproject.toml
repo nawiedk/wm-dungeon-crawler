@@ -26,3 +26,10 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["wm_dungeon_crawler"]
+
+[tool.pytest.ini_options]
+addopts = "--doctest-modules"
+testpaths = ["tests", "wm_dungeon_crawler"]
+
+[tool.coverage.run]
+source = ["wm_dungeon_crawler"]
