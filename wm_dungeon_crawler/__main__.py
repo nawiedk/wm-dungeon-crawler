@@ -69,6 +69,8 @@ def main() -> None:
 
         if engine.state.status is GameStatus.LOST:
             print("Erwischt! Die Sicherheitskraft hat dich geschnappt. Game Over.")
+        elif engine.state.status is GameStatus.WON:
+            print("Geschafft! Du hast das Stadion verlassen. Gewonnen!")
     except KeyboardInterrupt:
         print("\nAbbruch. Bis zum nächsten Mal!")
 

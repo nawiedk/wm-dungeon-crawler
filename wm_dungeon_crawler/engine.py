@@ -1,9 +1,8 @@
-"""Spiellogik: Bewegung, Kollision, Ausdauer, Türen/Gegenstände, Gegner und
-die Niederlagebedingung.
+"""Spiellogik: Bewegung, Kollision, Ausdauer, Türen/Gegenstände, Gegner sowie
+Sieg- und Niederlagebedingung.
 
 Reine Datenhaltung bleibt in `models.py`; hier kommt das Verhalten dazu, das
-auf einem `GameState` operiert. Die Siegbedingung (Ausgang erreichen) folgt
-in einem späteren Meilenstein.
+auf einem `GameState` operiert.
 """
 
 from __future__ import annotations
@@ -58,10 +57,11 @@ class Engine:
         Runde verbraucht.
 
         Reihenfolge einer erfolgreichen Runde: Ausdauer wird abgezogen, die
-        Spielfigur bewegt sich, Gegenstände auf dem Weg werden eingesammelt,
-        landet die Spielfigur dabei auf einer Sicherheitskraft ist die
-        Partie sofort verloren; andernfalls ziehen alle Sicherheitskräfte,
-        was ebenfalls zur Niederlage führen kann; nur wenn die Partie danach
+        Spielfigur bewegt sich, Gegenstände auf dem Weg werden eingesammelt.
+        Steht die Spielfigur danach auf dem Ausgang, ist die Partie sofort
+        gewonnen. Andernfalls: landet sie auf einer Sicherheitskraft, ist
+        die Partie sofort verloren; sonst ziehen alle Sicherheitskräfte, was
+        ebenfalls zur Niederlage führen kann; nur wenn die Partie danach
         noch läuft, regeneriert sich 1 Ausdauer.
 
         >>> from wm_dungeon_crawler.levels import create_fixed_level
@@ -99,7 +99,9 @@ class Engine:
         self.state.player.position = position
         for step_position in path:
             self._collect_item_at(step_position)
-        self._check_caught()
+        self._check_won()
+        if self.state.status is GameStatus.PLAYING:
+            self._check_caught()
         if self.state.status is GameStatus.PLAYING:
             self._advance_guards()
             self._check_caught()
@@ -216,6 +218,22 @@ class Engine:
         """
         for guard in self.state.guards:
             guard.patrol_index = (guard.patrol_index + 1) % len(guard.patrol_route)
+
+    def _check_won(self) -> None:
+        """Setzt den Spielstatus auf WON, wenn die Spielfigur den Ausgang
+        erreicht hat.
+
+        >>> from wm_dungeon_crawler.models import GameState, GameStatus, Grid, Player, Position, TileType
+        >>> grid = Grid(width=2, height=1, tiles={Position(1, 0): TileType.EXIT})
+        >>> engine = Engine(GameState(grid=grid, player=Player(position=Position(1, 0))))
+        >>> engine.state.status is GameStatus.PLAYING
+        True
+        >>> engine._check_won()
+        >>> engine.state.status is GameStatus.WON
+        True
+        """
+        if self.state.player.position == self.state.grid.exit_position:
+            self.state.status = GameStatus.WON
 
     def _check_caught(self) -> None:
         """Setzt den Spielstatus auf LOST, wenn eine Sicherheitskraft und
