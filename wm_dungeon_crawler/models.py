@@ -9,7 +9,7 @@ pygame.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum, auto
+from enum import Enum
 from typing import Final
 
 MAX_STAMINA: Final[int] = 2
@@ -45,9 +45,9 @@ class Position:
 class TileType(Enum):
     """Die Beschaffenheit eines Rasterfelds."""
 
-    FLOOR = auto()
-    WALL = auto()
-    EXIT = auto()
+    FLOOR = "floor"
+    WALL = "wall"
+    EXIT = "exit"
 
 
 @dataclass
@@ -177,9 +177,9 @@ class Guard:
 class GameStatus(Enum):
     """Der Ausgang einer Partie."""
 
-    PLAYING = auto()
-    WON = auto()
-    LOST = auto()
+    PLAYING = "playing"
+    WON = "won"
+    LOST = "lost"
 
 
 @dataclass

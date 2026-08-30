@@ -1,13 +1,14 @@
 """Startpunkt: ``uv run python -m wm_dungeon_crawler``.
 
 Provisorische Text-Steuerung zum manuellen Testen von Bewegung, Kollision,
-Ausdauer, Türen/Gegenständen sowie Gegnern – Platzhalter für die
-pygame-Oberfläche aus Meilenstein 10.
+Ausdauer, Türen/Gegenständen, Gegnern sowie Speichern/Laden – Platzhalter
+für die pygame-Oberfläche aus Meilenstein 10.
 """
 
 from wm_dungeon_crawler.engine import Engine
 from wm_dungeon_crawler.levels import create_fixed_level
 from wm_dungeon_crawler.models import MAX_STAMINA, Direction, GameStatus
+from wm_dungeon_crawler.persistence import SaveFileError, load_game, save_game
 from wm_dungeon_crawler.rendering import render_ascii
 
 _WALK_KEYS: dict[str, Direction] = {
@@ -36,8 +37,8 @@ def main() -> None:
     engine = Engine(create_fixed_level())
     _render_state(engine)
     print(
-        "Steuerung: w/a/s/d gehen, W/A/S/D sprinten, "
-        "r ausruhen, u Tür aufschließen, q beenden."
+        "Steuerung: w/a/s/d gehen, W/A/S/D sprinten, r ausruhen, "
+        "u Tür aufschließen, save/load Spielstand, q beenden."
     )
 
     try:
@@ -46,7 +47,16 @@ def main() -> None:
             if command == "q":
                 print("Bis zum nächsten Mal!")
                 return
-            if command == "r":
+            if command == "save":
+                save_game(engine.state)
+                print("Spielstand gespeichert.")
+            elif command == "load":
+                try:
+                    engine.state = load_game()
+                    print("Spielstand geladen.")
+                except SaveFileError as error:
+                    print(f"Laden fehlgeschlagen: {error}")
+            elif command == "r":
                 engine.take_turn_rest()
             elif command == "u":
                 if not engine.try_unlock_adjacent_door():
@@ -61,7 +71,10 @@ def main() -> None:
                     direction = _SPRINT_KEYS.get(command)
                     sprint = True
                 if direction is None:
-                    print("Unbekannte Eingabe. Nutze w/a/s/d, W/A/S/D, r, u oder q.")
+                    print(
+                        "Unbekannte Eingabe. Nutze w/a/s/d, W/A/S/D, r, u, "
+                        "save, load oder q."
+                    )
                     continue
                 if not engine.take_turn_move(direction, sprint=sprint):
                     print("Das geht nicht - zu wenig Ausdauer oder der Weg ist versperrt.")
