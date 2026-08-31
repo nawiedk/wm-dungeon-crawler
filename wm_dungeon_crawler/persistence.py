@@ -233,7 +233,7 @@ def load_game(path: Path = DEFAULT_SAVE_PATH) -> GameState:
     >>> loaded.player.position
     Position(x=2, y=4)
     >>> loaded.grid.width, loaded.grid.height
-    (5, 12)
+    (11, 13)
     >>> len(loaded.guards), len(loaded.doors), len(loaded.items)
     (1, 1, 1)
     >>> try:

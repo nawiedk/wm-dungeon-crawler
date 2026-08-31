@@ -1,6 +1,6 @@
 """Text-basierte Darstellung des Spielzustands.
 
-Platzhalter für die spätere pygame-Oberfläche (Meilenstein 10). Kennt nur
+Platzhalter/schnelle Alternative zur pygame-Oberfläche (`gui.py`). Kennt nur
 Datenmodell und Level-Modul, keine Zug-/Bewegungslogik – rein lesend.
 """
 
@@ -14,22 +14,34 @@ def render_ascii(state: GameState) -> str:
 
     Darstellung pro Feld (erster Treffer gewinnt): Spielfigur ``P``,
     Sicherheitskraft ``G``, Tür ``D`` (verschlossen) bzw. ``o`` (offen),
-    Gegenstand ``i``, Wand ``#``, Ausgang ``E``, sonst begehbarer Boden ``.``.
+    Gegenstand ``i``, Wand ``#``, Fußballplatz ``F``, Barriere ``B``,
+    Ausgang ``E``, sonst begehbarer Boden ``.``.
 
-    >>> from wm_dungeon_crawler.levels import create_fixed_level
-    >>> print(render_ascii(create_fixed_level()))
-    #####
-    ##P##
-    ##.##
-    ##.##
-    #i.##
-    ##.##
-    ##.##
-    #G..#
-    #...#
-    ##D##
-    ##E##
-    #####
+    Nutzt hier bewusst einen kleinen, selbst gebauten Zustand statt
+    `create_fixed_level()` – das feste Level platziert das Trikot seit
+    Kurzem zufällig, ein Doctest darf aber nicht vom Zufall abhängen.
+
+    >>> from wm_dungeon_crawler.models import (
+    ...     Door, Grid, Guard, Item, Player,
+    ... )
+    >>> grid = Grid(
+    ...     width=8,
+    ...     height=1,
+    ...     tiles={
+    ...         Position(2, 0): TileType.PITCH,
+    ...         Position(3, 0): TileType.BARRIER,
+    ...         Position(7, 0): TileType.EXIT,
+    ...     },
+    ... )
+    >>> state = GameState(
+    ...     grid=grid,
+    ...     player=Player(position=Position(0, 0)),
+    ...     items=[Item(position=Position(4, 0), name="Trikot")],
+    ...     doors=[Door(position=Position(5, 0))],
+    ...     guards=[Guard(patrol_route=[Position(6, 0)])],
+    ... )
+    >>> render_ascii(state)
+    'P.FBiDGE'
     """
     grid = state.grid
     door_by_position = {door.position: door for door in state.doors}
@@ -51,6 +63,10 @@ def render_ascii(state: GameState) -> str:
                 row_chars.append("i")
             elif grid.tile_at(position) is TileType.WALL:
                 row_chars.append("#")
+            elif grid.tile_at(position) is TileType.PITCH:
+                row_chars.append("F")
+            elif grid.tile_at(position) is TileType.BARRIER:
+                row_chars.append("B")
             elif grid.tile_at(position) is TileType.EXIT:
                 row_chars.append("E")
             else:

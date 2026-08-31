@@ -12,15 +12,20 @@ def test_grid_rejects_non_positive_dimensions():
         Grid(width=5, height=-1)
 
 
-def test_grid_rejects_more_than_one_exit():
+def test_grid_supports_multiple_exits():
     tiles = {Position(0, 0): TileType.EXIT, Position(1, 0): TileType.EXIT}
-    with pytest.raises(AssertionError):
-        Grid(width=2, height=1, tiles=tiles)
+    grid = Grid(width=2, height=1, tiles=tiles)
+    assert grid.exit_positions == {Position(0, 0), Position(1, 0)}
 
 
 def test_grid_untouched_tiles_default_to_floor():
     grid = Grid(width=2, height=2)
     assert grid.tile_at(Position(0, 0)) is TileType.FLOOR
+
+
+def test_grid_pitch_is_not_walkable():
+    grid = Grid(width=2, height=1, tiles={Position(1, 0): TileType.PITCH})
+    assert grid.is_walkable(Position(1, 0)) is False
 
 
 def test_player_rejects_stamina_outside_valid_range():

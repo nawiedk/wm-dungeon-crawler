@@ -34,11 +34,11 @@ class Engine:
 
         >>> from wm_dungeon_crawler.levels import create_fixed_level
         >>> engine = Engine(create_fixed_level())
-        >>> engine.is_passable(Position(2, 2))
+        >>> engine.is_passable(Position(2, 1))
         True
         >>> engine.is_passable(Position(0, 0))
         False
-        >>> engine.is_passable(Position(2, 9))
+        >>> engine.is_passable(Position(4, 7))
         False
         """
         if not self.state.grid.is_walkable(position):
@@ -58,7 +58,8 @@ class Engine:
         Runde verbraucht.
 
         Reihenfolge einer erfolgreichen Runde: Ausdauer wird abgezogen, die
-        Spielfigur bewegt sich, Gegenstände auf dem Weg werden eingesammelt.
+        Spielfigur bewegt sich, Gegenstände auf dem Weg werden eingesammelt
+        (was automatisch alle noch verschlossenen Türen aufschließt).
         Steht die Spielfigur danach auf dem Ausgang, ist die Partie sofort
         gewonnen. Andernfalls: landet sie auf einer Sicherheitskraft, ist
         die Partie sofort verloren; sonst ziehen alle Sicherheitskräfte, was
@@ -78,7 +79,7 @@ class Engine:
         >>> engine.take_turn_move(Direction.UP, sprint=True)  # nur 1 Ausdauer übrig
         False
         >>> engine.state.player.position  # unverändert, Fehlversuch kostet nichts
-        Position(x=2, y=4)
+        Position(x=2, y=6)
         """
         if self.state.status is not GameStatus.PLAYING:
             return False
@@ -135,67 +136,38 @@ class Engine:
         if self.state.status is GameStatus.PLAYING:
             self.state.player.stamina = MAX_STAMINA
 
-    def try_unlock_adjacent_door(self) -> bool:
-        """Schließt eine an die Spielfigur angrenzende verschlossene Tür auf.
-
-        Verbraucht dabei genau einen Gegenstand aus dem Inventar (kein
-        Generalschlüssel: jeder Gegenstand öffnet eine Tür und ist danach
-        weg) und lässt anschließend die Sicherheitskräfte ziehen (was zur
-        Niederlage führen kann), kostet aber keine Ausdauer. Ist die Aktion
-        nicht möglich (keine angrenzende verschlossene Tür, kein Gegenstand
-        im Inventar, oder die Partie ist bereits entschieden), passiert
-        nichts.
-
-        >>> from wm_dungeon_crawler.models import Door, GameState, Grid, Item, Player, Position
-        >>> grid = Grid(width=3, height=1)
-        >>> door = Door(position=Position(1, 0))
-        >>> player = Player(position=Position(0, 0))
-        >>> engine = Engine(GameState(grid=grid, player=player, doors=[door]))
-        >>> engine.try_unlock_adjacent_door()  # kein Gegenstand im Inventar
-        False
-        >>> player.inventory.append(Item(position=Position(0, 0), name="Trikot"))
-        >>> engine.try_unlock_adjacent_door()
-        True
-        >>> door.locked
-        False
-        >>> player.inventory
-        []
-        """
-        if self.state.status is not GameStatus.PLAYING:
-            return False
-        if not self.state.player.inventory:
-            return False
-
-        neighbor_positions = {
-            self.state.player.position + direction for direction in Direction
-        }
-        for door in self.state.doors:
-            if door.locked and door.position in neighbor_positions:
-                door.locked = False
-                self.state.player.inventory.pop()
-                self._advance_guards()
-                self._check_caught()
-                return True
-        return False
-
     def _collect_item_at(self, position: Position) -> None:
         """Sammelt einen an dieser Position liegenden Gegenstand ins
-        Inventar ein.
+        Inventar ein und schließt dabei automatisch alle noch
+        verschlossenen Türen auf.
 
-        >>> from wm_dungeon_crawler.models import GameState, Grid, Item, Player, Position
-        >>> item = Item(position=Position(0, 0), name="Schlüssel")
+        Der Gegenstand bleibt im Inventar (u.a. damit die GUI weiterhin
+        erkennen kann, dass die Spielfigur ihn trägt und den passenden
+        Sprite zeigt) – anders als bei einem klassischen Schlüssel gibt es
+        kein manuelles Aufschließen und kein Verbrauchen mehr.
+
+        >>> from wm_dungeon_crawler.models import Door, GameState, Grid, Item, Player, Position
+        >>> item = Item(position=Position(0, 0), name="Trikot")
+        >>> door = Door(position=Position(1, 0))
         >>> player = Player(position=Position(0, 0))
-        >>> engine = Engine(GameState(grid=Grid(width=1, height=1), player=player, items=[item]))
+        >>> state = GameState(
+        ...     grid=Grid(width=2, height=1), player=player, items=[item], doors=[door]
+        ... )
+        >>> engine = Engine(state)
         >>> engine._collect_item_at(Position(0, 0))
         >>> engine.state.items
         []
         >>> player.inventory
-        [Item(position=Position(x=0, y=0), name='Schlüssel')]
+        [Item(position=Position(x=0, y=0), name='Trikot')]
+        >>> door.locked
+        False
         """
         for item in list(self.state.items):
             if item.position == position:
                 self.state.items.remove(item)
                 self.state.player.inventory.append(item)
+                for door in self.state.doors:
+                    door.locked = False
 
     def _advance_guards(self) -> None:
         """Lässt jede Sicherheitskraft ihren nächsten Patrouillenschritt tun.
@@ -221,8 +193,9 @@ class Engine:
             guard.patrol_index = (guard.patrol_index + 1) % len(guard.patrol_route)
 
     def _check_won(self) -> None:
-        """Setzt den Spielstatus auf WON, wenn die Spielfigur den Ausgang
-        erreicht hat.
+        """Setzt den Spielstatus auf WON, wenn die Spielfigur einen der
+        Ausgänge erreicht hat (ein Level kann mehrere gleichwertige
+        Ausgänge haben, siehe `Grid.exit_positions`).
 
         >>> from wm_dungeon_crawler.models import GameState, GameStatus, Grid, Player, Position, TileType
         >>> grid = Grid(width=2, height=1, tiles={Position(1, 0): TileType.EXIT})
@@ -233,7 +206,7 @@ class Engine:
         >>> engine.state.status is GameStatus.WON
         True
         """
-        if self.state.player.position == self.state.grid.exit_position:
+        if self.state.player.position in self.state.grid.exit_positions:
             self.state.status = GameStatus.WON
 
     def _check_caught(self) -> None:

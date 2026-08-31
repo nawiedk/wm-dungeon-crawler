@@ -24,14 +24,19 @@ class Direction(Enum):
     RIGHT = (1, 0)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, order=True)
 class Position:
     """Eine Rasterposition im Stadion.
+
+    Sortierbar (erst x, dann y) – nützlich, um Mengen von Positionen für
+    Ausgaben/Tests in eine reproduzierbare Reihenfolge zu bringen.
 
     >>> Position(2, 3) == Position(2, 3)
     True
     >>> Position(0, 0) + Direction.RIGHT
     Position(x=1, y=0)
+    >>> sorted([Position(1, 0), Position(0, 1), Position(0, 0)])
+    [Position(x=0, y=0), Position(x=0, y=1), Position(x=1, y=0)]
     """
 
     x: int
@@ -49,6 +54,8 @@ class TileType(Enum):
     FLOOR = "floor"
     WALL = "wall"
     EXIT = "exit"
+    PITCH = "pitch"  # der Fußballplatz in der Mitte des Stadions: nicht begehbar
+    BARRIER = "barrier"  # dauerhaftes Hindernis, optisch von WALL unterschieden
 
 
 @dataclass
@@ -77,10 +84,8 @@ class Grid:
     tiles: dict[Position, TileType] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        """Prüft Rastermaße und dass höchstens ein Ausgang existiert."""
+        """Prüft, dass die Rastermaße positiv sind."""
         assert self.width > 0 and self.height > 0, "Rastermaße müssen positiv sein"
-        exits = [p for p, t in self.tiles.items() if t is TileType.EXIT]
-        assert len(exits) <= 1, "Ein Level darf höchstens einen Ausgang haben"
 
     def in_bounds(self, position: Position) -> bool:
         """Prüft, ob eine Position innerhalb der Rastergrenzen liegt."""
@@ -91,16 +96,33 @@ class Grid:
         return self.tiles.get(position, TileType.FLOOR)
 
     def is_walkable(self, position: Position) -> bool:
-        """Prüft, ob eine Position im Raster liegt und keine Wand ist."""
-        return self.in_bounds(position) and self.tile_at(position) is not TileType.WALL
+        """Prüft, ob eine Position im Raster liegt und begehbar ist.
+
+        Begehbar sind FLOOR und EXIT; WALL und PITCH (der Fußballplatz)
+        nicht. Bewusst als Positivliste formuliert, damit ein künftiger,
+        weiterer nicht-begehbarer Feldtyp nicht vergessen werden kann.
+        """
+        if not self.in_bounds(position):
+            return False
+        return self.tile_at(position) in (TileType.FLOOR, TileType.EXIT)
 
     @property
-    def exit_position(self) -> Position | None:
-        """Die Position des Ausgangs, falls im Level gesetzt."""
-        for position, tile in self.tiles.items():
-            if tile is TileType.EXIT:
-                return position
-        return None
+    def exit_positions(self) -> set[Position]:
+        """Alle Positionen, die als Ausgang gelten.
+
+        Ein Level kann mehrere gleichwertige Ausgänge haben (z.B. einen
+        frei zugänglichen, aber riskanteren, und einen versperrten,
+        sichereren) – jeder von ihnen gewinnt die Partie.
+
+        >>> grid = Grid(width=3, height=1, tiles={
+        ...     Position(0, 0): TileType.EXIT, Position(2, 0): TileType.EXIT,
+        ... })
+        >>> sorted(grid.exit_positions)
+        [Position(x=0, y=0), Position(x=2, y=0)]
+        """
+        return {
+            position for position, tile in self.tiles.items() if tile is TileType.EXIT
+        }
 
 
 @dataclass

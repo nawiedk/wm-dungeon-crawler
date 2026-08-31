@@ -39,7 +39,7 @@ def main() -> None:
     _render_state(engine)
     print(
         "Steuerung: w/a/s/d gehen, W/A/S/D sprinten, r ausruhen, "
-        "u Tür aufschließen, save/load Spielstand, q beenden."
+        "save/load Spielstand, q beenden."
     )
 
     try:
@@ -59,12 +59,6 @@ def main() -> None:
                     print(f"Laden fehlgeschlagen: {error}")
             elif command == "r":
                 engine.take_turn_rest()
-            elif command == "u":
-                if not engine.try_unlock_adjacent_door():
-                    print(
-                        "Das geht nicht - keine angrenzende Tür oder "
-                        "kein Gegenstand im Inventar."
-                    )
             else:
                 direction = _WALK_KEYS.get(command)
                 sprint = False
@@ -73,7 +67,7 @@ def main() -> None:
                     sprint = True
                 if direction is None:
                     print(
-                        "Unbekannte Eingabe. Nutze w/a/s/d, W/A/S/D, r, u, "
+                        "Unbekannte Eingabe. Nutze w/a/s/d, W/A/S/D, r, "
                         "save, load oder q."
                     )
                     continue

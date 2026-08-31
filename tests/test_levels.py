@@ -28,7 +28,7 @@ def test_parse_level_rejects_empty_description():
 def test_create_fixed_level_is_internally_consistent():
     state = create_fixed_level()
 
-    assert state.grid.exit_position is not None
+    assert state.grid.exit_positions
     assert state.grid.is_walkable(state.player.position)
     for guard in state.guards:
         for waypoint in guard.patrol_route:
