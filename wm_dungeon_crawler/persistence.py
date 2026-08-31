@@ -11,6 +11,7 @@ spiegelt daher eine Dataclass aus `models.py` eins zu eins.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Annotated
 
 from pydantic import BaseModel, Field, ValidationError
 
@@ -185,6 +186,7 @@ class GameStateData(BaseModel):
     items: list[ItemData]
     doors: list[DoorData]
     status: GameStatus
+    turns_taken: Annotated[int, Field(ge=0)]
 
     def to_game_state(self) -> GameState:
         """Wandelt zurück in den Live-`GameState`."""
@@ -195,6 +197,7 @@ class GameStateData(BaseModel):
             items=[item.to_item() for item in self.items],
             doors=[door.to_door() for door in self.doors],
             status=self.status,
+            turns_taken=self.turns_taken,
         )
 
     @classmethod
@@ -207,6 +210,7 @@ class GameStateData(BaseModel):
             items=[ItemData.from_item(item) for item in state.items],
             doors=[DoorData.from_door(door) for door in state.doors],
             status=state.status,
+            turns_taken=state.turns_taken,
         )
 
 

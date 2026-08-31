@@ -58,8 +58,10 @@ class Engine:
         Runde verbraucht.
 
         Reihenfolge einer erfolgreichen Runde: Ausdauer wird abgezogen, die
-        Spielfigur bewegt sich, Gegenstände auf dem Weg werden eingesammelt
-        (was automatisch alle noch verschlossenen Türen aufschließt).
+        Spielfigur bewegt sich, der Rundenzähler (`turns_taken`, Basis der
+        Bestenliste in `highscores.py`) wird erhöht, Gegenstände auf dem Weg
+        werden eingesammelt (was automatisch alle noch verschlossenen Türen
+        aufschließt).
         Steht die Spielfigur danach auf dem Ausgang, ist die Partie sofort
         gewonnen. Andernfalls: landet sie auf einer Sicherheitskraft, ist
         die Partie sofort verloren; sonst ziehen alle Sicherheitskräfte, was
@@ -99,6 +101,7 @@ class Engine:
 
         self.state.player.stamina -= cost
         self.state.player.position = position
+        self.state.turns_taken += 1
         for step_position in path:
             self._collect_item_at(step_position)
         self._check_won()
@@ -114,7 +117,8 @@ class Engine:
     def take_turn_rest(self) -> None:
         """Lässt die Spielfigur eine Runde ausruhen.
 
-        Keine Bewegung, keine Ausdauerkosten. Danach ziehen alle
+        Keine Bewegung, keine Ausdauerkosten, aber der Rundenzähler
+        (`turns_taken`) wird trotzdem erhöht. Danach ziehen alle
         Sicherheitskräfte, was zur Niederlage führen kann; nur wenn die
         Partie danach noch läuft, wird die Ausdauerleiste vollständig
         aufgefüllt. Ist die Partie bereits entschieden, passiert nichts.
@@ -131,6 +135,7 @@ class Engine:
         """
         if self.state.status is not GameStatus.PLAYING:
             return
+        self.state.turns_taken += 1
         self._advance_guards()
         self._check_caught()
         if self.state.status is GameStatus.PLAYING:

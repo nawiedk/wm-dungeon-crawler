@@ -7,3 +7,5 @@ __pycache__/
 htmlcov/
 .coverage
 savegame.json
+highscores.json
+*.prof

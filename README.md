@@ -40,7 +40,9 @@ In beiden Varianten gilt: Gegenstände werden automatisch beim Betreten
 ihres Feldes eingesammelt und schließen dabei sofort alle noch
 verschlossenen Türen auf. Landet die Spielfigur auf demselben Feld wie
 eine Sicherheitskraft, ist die Partie verloren; wird der Ausgang erreicht,
-ist sie gewonnen.
+ist sie gewonnen. Bei einem Sieg zählt die Zahl der benötigten Runden
+(weniger ist besser) für die Bestenliste, die die drei besten Versuche in
+`highscores.json` festhält.
 
 ## Tests
 
@@ -54,3 +56,13 @@ Paket aus. Mit Testabdeckung:
 ```bash
 uv run pytest --cov
 ```
+
+## Profiling
+
+```bash
+uv run python -m wm_dungeon_crawler.profiling
+```
+
+Misst mit `cProfile`, wo beim Laden der Pixelart-Grafiken (`gui._load_sprites`)
+die Zeit verbraucht wird, und schreibt die Rohdaten zusätzlich nach
+`sprites.prof` (z.B. für `uv run snakeviz sprites.prof`).

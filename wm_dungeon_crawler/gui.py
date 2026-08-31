@@ -2,8 +2,8 @@
 
 Ergänzt die Text-Vorschau aus `rendering.py` (die bewusst erhalten bleibt –
 schnell, ohne Fenster testbar, von den Doctests/CI mitgeprüft) um eine
-echte grafische Darstellung samt Steuerung. Kennt nur Datenmodell, `Engine`
-und `persistence`, keine eigene Spiellogik.
+echte grafische Darstellung samt Steuerung. Kennt nur Datenmodell, `Engine`,
+`persistence` und `highscores`, keine eigene Spiellogik.
 
 Alle Grafiken sind Pixelart-Bilddateien unter `assets/` (von der Nutzerin
 per KI-Bildgenerator erstellt), keine selbst gezeichneten Formen. Der
@@ -21,6 +21,7 @@ from pathlib import Path
 import pygame
 
 from wm_dungeon_crawler.engine import Engine
+from wm_dungeon_crawler.highscores import load_highscores, record_attempt
 from wm_dungeon_crawler.levels import create_fixed_level
 from wm_dungeon_crawler.models import (
     MAX_STAMINA,
@@ -292,13 +293,15 @@ def draw_state(
 def _draw_panel(
     surface: pygame.Surface, state: GameState, font: pygame.font.Font, message: str
 ) -> None:
-    """Zeichnet Ausdauer, Inventar, Steuerungs-Übersicht und Statusmeldung."""
+    """Zeichnet Ausdauer, Inventar, Rundenzahl, Steuerungs-Übersicht und
+    Statusmeldung."""
     panel_x = MARGIN * 2 + state.grid.width * TILE_SIZE
     panel_text_width = PANEL_WIDTH - MARGIN
     inventory = ", ".join(item.name for item in state.player.inventory) or "leer"
     lines = [
         f"Ausdauer: {state.player.stamina}/{MAX_STAMINA}",
         f"Inventar: {inventory}",
+        f"Runden: {state.turns_taken}",
         "",
         "Pfeiltasten/WASD: gehen",
         "+ Shift: sprinten",
@@ -316,9 +319,13 @@ def _draw_panel(
 
 
 def _draw_end_overlay(
-    surface: pygame.Surface, state: GameState, font_large: pygame.font.Font
+    surface: pygame.Surface,
+    state: GameState,
+    font: pygame.font.Font,
+    font_large: pygame.font.Font,
 ) -> None:
-    """Zeichnet eine abgedunkelte Sieg-/Niederlage-Meldung über dem Raster."""
+    """Zeichnet eine abgedunkelte Sieg-/Niederlage-Meldung über dem Raster,
+    bei einem Sieg zusätzlich benötigte Runden und Bestenliste."""
     if state.status is GameStatus.WON:
         text, color = "Gewonnen! Frankreich schmeisst Paraguay raus.", COLOR_WON_TEXT
     elif state.status is GameStatus.LOST:
@@ -332,11 +339,46 @@ def _draw_end_overlay(
     overlay.fill((0, 0, 0, 180))
     surface.blit(overlay, (MARGIN, MARGIN))
 
+    center_x = MARGIN + grid_width_px // 2
+    center_y = MARGIN + grid_height_px // 2
     rendered = font_large.render(text, True, color)
-    rect = rendered.get_rect(
-        center=(MARGIN + grid_width_px // 2, MARGIN + grid_height_px // 2)
-    )
+    rect = rendered.get_rect(center=(center_x, center_y))
     surface.blit(rendered, rect)
+
+    if state.status is GameStatus.WON:
+        _draw_highscore_lines(surface, state, font, center_x, rect.bottom)
+
+
+def _draw_highscore_lines(
+    surface: pygame.Surface,
+    state: GameState,
+    font: pygame.font.Font,
+    center_x: int,
+    top: int,
+) -> None:
+    """Zeigt die für diesen Sieg benötigten Runden sowie die Bestenliste
+    (wenigste Runden zuerst) unter der Siegmeldung an."""
+    highscores = load_highscores()
+    lines = [
+        f"Runden benötigt: {state.turns_taken}",
+        f"Bestenliste: {', '.join(str(turns) for turns in highscores)}",
+    ]
+    for row, line in enumerate(lines):
+        rendered = font.render(line, True, COLOR_TEXT)
+        rect = rendered.get_rect(center=(center_x, top + 28 + row * 24))
+        surface.blit(rendered, rect)
+
+
+def _record_highscore_if_won(state: GameState) -> None:
+    """Trägt bei einem frischen Sieg die benötigten Runden in die
+    Bestenliste ein.
+
+    Wird direkt nach einem erfolgreichen Zug aufgerufen. Da nach einem Sieg
+    keine weiteren Züge mehr möglich sind (siehe `_handle_keydown`), passiert
+    das dadurch garantiert nur einmal pro Partie.
+    """
+    if state.status is GameStatus.WON:
+        record_attempt(state.turns_taken)
 
 
 def _handle_keydown(engine: Engine, event: pygame.event.Event) -> str | None:
@@ -354,6 +396,7 @@ def _handle_keydown(engine: Engine, event: pygame.event.Event) -> str | None:
 
     if event.key == pygame.K_r:
         engine.take_turn_rest()
+        _record_highscore_if_won(engine.state)
         return ""
 
     direction = _DIRECTION_KEYS.get(event.key)
@@ -362,6 +405,7 @@ def _handle_keydown(engine: Engine, event: pygame.event.Event) -> str | None:
 
     sprint = bool(event.mod & pygame.KMOD_SHIFT)
     if engine.take_turn_move(direction, sprint=sprint):
+        _record_highscore_if_won(engine.state)
         return ""
     return "Das geht nicht - zu wenig Ausdauer oder der Weg ist versperrt."
 
@@ -404,7 +448,7 @@ def main() -> None:
                         message = result
 
         draw_state(screen, engine.state, sprites, font, message)
-        _draw_end_overlay(screen, engine.state, font_large)
+        _draw_end_overlay(screen, engine.state, font, font_large)
         pygame.display.flip()
         clock.tick(30)
 

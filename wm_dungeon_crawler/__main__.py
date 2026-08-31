@@ -1,11 +1,12 @@
 """Startpunkt: ``uv run python -m wm_dungeon_crawler``.
 
 Provisorische Text-Steuerung zum manuellen Testen von Bewegung, Kollision,
-Ausdauer, Türen/Gegenständen, Gegnern sowie Speichern/Laden – Platzhalter
-für die pygame-Oberfläche aus Meilenstein 10.
+Ausdauer, Türen/Gegenständen, Gegnern, Speichern/Laden sowie der Bestenliste
+– Platzhalter für die pygame-Oberfläche aus Meilenstein 10.
 """
 
 from wm_dungeon_crawler.engine import Engine
+from wm_dungeon_crawler.highscores import record_attempt
 from wm_dungeon_crawler.levels import create_fixed_level
 from wm_dungeon_crawler.models import MAX_STAMINA, Direction, GameStatus
 from wm_dungeon_crawler.persistence import SaveFileError, load_game, save_game
@@ -26,11 +27,12 @@ _SPRINT_KEYS: dict[str, Direction] = {
 
 
 def _render_state(engine: Engine) -> None:
-    """Gibt Raster, Ausdauer und Inventar des aktuellen Zustands aus."""
+    """Gibt Raster, Ausdauer, Inventar und Rundenzahl des aktuellen Zustands aus."""
     print(render_ascii(engine.state))
     print(f"Ausdauer: {engine.state.player.stamina}/{MAX_STAMINA}")
     items = ", ".join(item.name for item in engine.state.player.inventory) or "leer"
     print(f"Inventar: {items}")
+    print(f"Runden: {engine.state.turns_taken}")
 
 
 def main() -> None:
@@ -81,6 +83,9 @@ def main() -> None:
             print("Erwischt! Die Sicherheitskraft hat dich geschnappt. Game Over.")
         elif engine.state.status is GameStatus.WON:
             print("Geschafft! Du hast das Stadion verlassen. Gewonnen!")
+            highscores = record_attempt(engine.state.turns_taken)
+            print(f"Benötigte Runden: {engine.state.turns_taken}")
+            print("Bestenliste:", ", ".join(str(turns) for turns in highscores))
     except KeyboardInterrupt:
         print("\nAbbruch. Bis zum nächsten Mal!")
 

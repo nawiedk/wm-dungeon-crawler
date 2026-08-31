@@ -218,3 +218,4 @@ class GameState:
     items: list[Item] = field(default_factory=list)
     doors: list[Door] = field(default_factory=list)
     status: GameStatus = GameStatus.PLAYING
+    turns_taken: int = 0

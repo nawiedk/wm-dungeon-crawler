@@ -30,6 +30,17 @@ def test_round_trip_preserves_player_and_level_shape(tmp_path: Path) -> None:
     assert len(loaded.items) == len(state.items)
 
 
+def test_round_trip_preserves_turns_taken(tmp_path: Path) -> None:
+    state = create_fixed_level()
+    state.turns_taken = 7
+    save_path = tmp_path / "save.json"
+
+    save_game(state, save_path)
+    loaded = load_game(save_path)
+
+    assert loaded.turns_taken == 7
+
+
 def test_load_missing_file_raises_save_file_error(tmp_path: Path) -> None:
     with pytest.raises(SaveFileError, match="Keine Speicherdatei"):
         load_game(tmp_path / "nope.json")
@@ -42,7 +53,9 @@ def test_load_corrupted_json_raises_save_file_error(tmp_path: Path) -> None:
         load_game(bad_path)
 
 
-def test_load_valid_json_with_wrong_shape_raises_save_file_error(tmp_path: Path) -> None:
+def test_load_valid_json_with_wrong_shape_raises_save_file_error(
+    tmp_path: Path,
+) -> None:
     bad_path = tmp_path / "wrong_shape.json"
     bad_path.write_text('{"just": "not a save file"}', encoding="utf-8")
     with pytest.raises(SaveFileError):
