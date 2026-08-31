@@ -5,27 +5,27 @@ import pytest
 from wm_dungeon_crawler.levels import create_fixed_level, parse_level
 
 
-def test_parse_level_rejects_ragged_lines():
+def test_parse_level_rejects_ragged_lines() -> None:
     with pytest.raises(ValueError, match="gleich lang"):
         parse_level("###\n#P\n###")
 
 
-def test_parse_level_rejects_unknown_character():
+def test_parse_level_rejects_unknown_character() -> None:
     with pytest.raises(ValueError, match="Unbekanntes Zeichen"):
         parse_level("###\n#X#\n###")
 
 
-def test_parse_level_requires_player_start():
+def test_parse_level_requires_player_start() -> None:
     with pytest.raises(ValueError, match="Startposition"):
         parse_level("###\n#.#\n###")
 
 
-def test_parse_level_rejects_empty_description():
+def test_parse_level_rejects_empty_description() -> None:
     with pytest.raises(ValueError, match="leer"):
         parse_level("   \n\n")
 
 
-def test_create_fixed_level_is_internally_consistent():
+def test_create_fixed_level_is_internally_consistent() -> None:
     state = create_fixed_level()
 
     assert state.grid.exit_positions

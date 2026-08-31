@@ -19,7 +19,7 @@ from wm_dungeon_crawler.models import (
 )
 
 
-def test_move_blocked_by_wall_has_no_side_effects():
+def test_move_blocked_by_wall_has_no_side_effects() -> None:
     grid = Grid(width=3, height=1, tiles={Position(2, 0): TileType.WALL})
     state = GameState(grid=grid, player=Player(position=Position(1, 0)))
     engine = Engine(state)
@@ -29,7 +29,7 @@ def test_move_blocked_by_wall_has_no_side_effects():
     assert engine.state.player.stamina == MAX_STAMINA
 
 
-def test_move_onto_open_floor_succeeds():
+def test_move_onto_open_floor_succeeds() -> None:
     grid = Grid(width=3, height=1)
     state = GameState(grid=grid, player=Player(position=Position(1, 0)))
     engine = Engine(state)
@@ -38,7 +38,7 @@ def test_move_onto_open_floor_succeeds():
     assert engine.state.player.position == Position(2, 0)
 
 
-def test_cannot_walk_onto_pitch():
+def test_cannot_walk_onto_pitch() -> None:
     grid = Grid(width=3, height=1, tiles={Position(1, 0): TileType.PITCH})
     state = GameState(grid=grid, player=Player(position=Position(0, 0)))
     engine = Engine(state)
@@ -47,7 +47,7 @@ def test_cannot_walk_onto_pitch():
     assert engine.state.player.position == Position(0, 0)
 
 
-def test_sprint_collects_item_on_intermediate_tile():
+def test_sprint_collects_item_on_intermediate_tile() -> None:
     grid = Grid(width=3, height=1)
     item = Item(position=Position(1, 0), name="Schlüssel")
     state = GameState(grid=grid, player=Player(position=Position(0, 0)), items=[item])
@@ -61,7 +61,7 @@ def test_sprint_collects_item_on_intermediate_tile():
     ]
 
 
-def test_sprint_blocked_on_second_tile_has_no_side_effects():
+def test_sprint_blocked_on_second_tile_has_no_side_effects() -> None:
     grid = Grid(width=3, height=1, tiles={Position(2, 0): TileType.WALL})
     state = GameState(grid=grid, player=Player(position=Position(0, 0)))
     engine = Engine(state)
@@ -71,7 +71,7 @@ def test_sprint_blocked_on_second_tile_has_no_side_effects():
     assert engine.state.player.stamina == MAX_STAMINA
 
 
-def test_collecting_item_automatically_unlocks_all_doors():
+def test_collecting_item_automatically_unlocks_all_doors() -> None:
     grid = Grid(width=3, height=1)
     item = Item(position=Position(1, 0), name="Trikot")
     door = Door(position=Position(2, 0))
@@ -85,7 +85,7 @@ def test_collecting_item_automatically_unlocks_all_doors():
     assert [collected.name for collected in engine.state.player.inventory] == ["Trikot"]
 
 
-def test_collecting_item_unlocks_every_locked_door():
+def test_collecting_item_unlocks_every_locked_door() -> None:
     grid = Grid(width=4, height=1)
     item = Item(position=Position(1, 0), name="Trikot")
     door_a = Door(position=Position(2, 0))
@@ -103,7 +103,7 @@ def test_collecting_item_unlocks_every_locked_door():
     assert door_b.locked is False
 
 
-def test_player_walking_into_guard_is_caught():
+def test_player_walking_into_guard_is_caught() -> None:
     grid = Grid(width=3, height=1)
     guard = Guard(patrol_route=[Position(1, 0)])
     state = GameState(grid=grid, player=Player(position=Position(0, 0)), guards=[guard])
@@ -113,7 +113,7 @@ def test_player_walking_into_guard_is_caught():
     assert engine.state.status is GameStatus.LOST
 
 
-def test_guard_walking_into_resting_player_is_caught():
+def test_guard_walking_into_resting_player_is_caught() -> None:
     grid = Grid(width=3, height=1)
     guard = Guard(patrol_route=[Position(0, 0), Position(1, 0)])
     state = GameState(grid=grid, player=Player(position=Position(1, 0)), guards=[guard])
@@ -123,7 +123,7 @@ def test_guard_walking_into_resting_player_is_caught():
     assert engine.state.status is GameStatus.LOST
 
 
-def test_reaching_exit_wins():
+def test_reaching_exit_wins() -> None:
     grid = Grid(width=2, height=1, tiles={Position(1, 0): TileType.EXIT})
     state = GameState(grid=grid, player=Player(position=Position(0, 0)))
     engine = Engine(state)
@@ -132,7 +132,7 @@ def test_reaching_exit_wins():
     assert engine.state.status is GameStatus.WON
 
 
-def test_winning_takes_priority_over_being_caught_on_the_same_move():
+def test_winning_takes_priority_over_being_caught_on_the_same_move() -> None:
     grid = Grid(width=2, height=1, tiles={Position(1, 0): TileType.EXIT})
     guard = Guard(patrol_route=[Position(1, 0)])
     state = GameState(grid=grid, player=Player(position=Position(0, 0)), guards=[guard])
@@ -142,7 +142,7 @@ def test_winning_takes_priority_over_being_caught_on_the_same_move():
     assert engine.state.status is GameStatus.WON
 
 
-def test_no_action_possible_after_losing():
+def test_no_action_possible_after_losing() -> None:
     grid = Grid(width=4, height=1)
     guard = Guard(patrol_route=[Position(2, 0)])
     player = Player(position=Position(0, 0))
@@ -171,7 +171,9 @@ def test_no_action_possible_after_losing():
         max_size=20,
     )
 )
-def test_stamina_stays_within_valid_bounds_for_any_move_sequence(directions):
+def test_stamina_stays_within_valid_bounds_for_any_move_sequence(
+    directions: list[Direction],
+) -> None:
     grid = Grid(width=21, height=21)
     state = GameState(grid=grid, player=Player(position=Position(10, 10)))
     engine = Engine(state)
@@ -182,7 +184,7 @@ def test_stamina_stays_within_valid_bounds_for_any_move_sequence(directions):
 
 
 @given(st.integers(min_value=1, max_value=10))
-def test_repeated_single_steps_never_drain_stamina(num_steps):
+def test_repeated_single_steps_never_drain_stamina(num_steps: int) -> None:
     grid = Grid(width=30, height=1)
     state = GameState(grid=grid, player=Player(position=Position(15, 0)))
     engine = Engine(state)
