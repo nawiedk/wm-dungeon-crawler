@@ -82,9 +82,7 @@ def test_collecting_item_automatically_unlocks_all_doors():
 
     assert engine.take_turn_move(Direction.RIGHT) is True
     assert door.locked is False
-    assert [collected.name for collected in engine.state.player.inventory] == [
-        "Trikot"
-    ]
+    assert [collected.name for collected in engine.state.player.inventory] == ["Trikot"]
 
 
 def test_collecting_item_unlocks_every_locked_door():

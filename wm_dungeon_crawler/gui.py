@@ -221,7 +221,9 @@ def _draw_pitch_markings(surface: pygame.Surface, state: GameState) -> None:
     bottom = MARGIN + (max(p.y for p in pitch_positions) + 1) * TILE_SIZE
     center = ((left + right) // 2, (top + bottom) // 2)
 
-    pygame.draw.line(surface, COLOR_PITCH_LINE, (left, center[1]), (right, center[1]), 2)
+    pygame.draw.line(
+        surface, COLOR_PITCH_LINE, (left, center[1]), (right, center[1]), 2
+    )
     radius = min(right - left, bottom - top) // 4
     pygame.draw.circle(surface, COLOR_PITCH_LINE, center, radius, width=2)
 
