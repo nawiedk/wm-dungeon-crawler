@@ -57,6 +57,21 @@ Paket aus. Mit Testabdeckung:
 uv run pytest --cov
 ```
 
+## Qualitätssicherung
+
+```bash
+uv run mypy wm_dungeon_crawler tests
+uv run mypy --strict wm_dungeon_crawler tests
+uv run ruff check
+uv run ruff format --check
+uv run interrogate -v wm_dungeon_crawler
+```
+
+Typprüfung (normal und streng), Linting, Formatierungs-Check und
+Dokumentationsabdeckung. `ruff format --check` zeigt nur an, ob etwas
+umformatiert werden müsste; zum tatsächlichen Formatieren `uv run ruff format`
+(ohne `--check`) ausführen.
+
 ## Profiling
 
 ```bash
